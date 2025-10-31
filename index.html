@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Agrícola - Palma de Aceite</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variables CSS para consistencia de color */
+        :root {
+            --color-primary: #1e8449; /* Verde Oscuro de Palma */
+            --color-secondary: #2ecc71; /* Verde Brillante de Palma */
+            --color-accent: #f39c12; /* Naranja/Amarillo de Fruto */
+            --color-background: #f4f6f6; /* Fondo Claro */
+            --color-card-bg: #ffffff;
+            --color-text: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-background);
+            color: var(--color-text);
+        }
+
+        .header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+        }
+
+        .header i {
+            margin-right: 15px;
+            font-size: 1.5em;
+            color: var(--color-secondary);
+        }
+
+        .dashboard-container {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--color-card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            grid-column: span 1; /* Por defecto ocupa 1 columna */
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--color-primary);
+            border-bottom: 2px solid var(--color-secondary);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header i {
+            color: var(--color-accent);
+        }
+
+        /* Tamaños de Gráficos */
+        .chart-large { grid-column: span 2; }
+        .chart-medium { grid-column: span 1; }
+        .table-full { grid-column: span 3; }
+
+        /* Estilos de Tabla */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background-color: var(--color-primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        .data-table tr:hover {
+            background-color: #e8f8f5; /* Verde muy claro al pasar el mouse */
+        }
+
+        /* Controles de Filtrado y Descarga */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .controls label {
+            font-weight: 500;
+        }
+
+        .controls select, .controls button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .controls button {
+            background-color: var(--color-secondary);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background-color: #27ae60;
+        }
+
+        /* Responsividad básica */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                grid-column: span 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="fas fa-seedling"></i> Dashboard Agrícola - Palma de Aceite </h1>
+        <p>Análisis 2021-2024</p>
+    </div>
+
+    <div class="dashboard-container">
+
+        <div class="card chart-medium">
+            <div class="card-header">
+                Filtros Globales <i class="fas fa-filter"></i>
+            </div>
+            <div class="controls">
+                <label for="filter-year">Año:</label>
+                <select id="filter-year" onchange="updateDashboard()">
+                    <option value="Total">Todos</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                </select>
+            </div>
+            <div class="controls">
+                <button onclick="downloadCSV('all')"><i class="fas fa-download"></i> Descargar Todos los Datos</button>
+            </div>
+        </div>
+
+        <div class="card chart-large">
+            <div class="card-header">
+                Área Neta Sembrada por Zona (Ha) <i class="fas fa-tree"></i>
+            </div>
+            <canvas id="area-chart"></canvas>
+        </div>
+
+        <div class="card chart-large">
+            <div class="card-header">
+                Producción de CPO por Zona (Toneladas) <i class="fas fa-oil-can"></i>
+            </div>
+            <canvas id="production-chart"></canvas>
+        </div>
+
+        <div class="card chart-medium">
+            <div class="card-header">
+                Tendencia de Ventas CPO (Toneladas) <i class="fas fa-chart-line"></i>
+            </div>
+            <canvas id="sales-line-chart"></canvas>
+        </div>
+
+        <div class="card table-full">
+            <div class="card-header">
+                Datos Detallados 2021-2024 <i class="fas fa-table"></i>
+            </div>
+            <div class="controls">
+                <label for="filter-table">Datos a Mostrar:</label>
+                <select id="filter-table" onchange="renderTable()">
+                    <option value="area">Área Neta Sembrada</option>
+                    <option value="production">Producción CPO</option>
+                    <option value="sales">Ventas CPO</option>
+                </select>
+                <button onclick="downloadCSV(document.getElementById('filter-table').value)"><i class="fas fa-file-csv"></i> Descargar Tabla</button>
+            </div>
+            <div id="data-table-container">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ------------------------------------------------------------------------------------------------
+        // 1. DATOS (Extraídos de los archivos CSV)
+        // ------------------------------------------------------------------------------------------------
+        const dataArea = {
+            title: "Área Neta Sembrada (Ha)",
+            headers: ["Zona", "2021", "2022", "2023", "2024"],
+            rows: [
+                ["Central", 190208, 191905, 202546, 206656],
+                ["Norte", 104340, 99637, 100359, 106772],
+                ["Oriental", 265912, 265283, 271890, 273376],
+                ["Suroccidental", 19416, 19975, 21422, 22338],
+                ["Total", 579876, 576800, 596217, 609142]
+            ]
+        };
+
+        const dataProduction = {
+            title: "Producción CPO (Toneladas)",
+            headers: ["Zona", "2021", "2022", "2023", "2024"],
+            rows: [
+                ["Central", 553336, 602762, 578137, 525671],
+                ["Norte", 352462, 372560, 331333, 272863],
+                ["Oriental", 776535, 722660, 847401, 835503],
+                ["Suroccidental", 65556, 70400, 84604, 85772],
+                ["Total", 1747888, 1768381, 1841475, 1719809]
+            ]
+        };
+
+        const dataSales = {
+            title: "Ventas CPO (Toneladas)",
+            headers: ["Mercado", "2021", "2022", "2023", "2024"],
+            rows: [
+                ["Nacional", 1210986, 1319253, 1356333, 1328012],
+                ["Exportación", 492733, 467140, 490362, 381560],
+                ["Total", 1703719, 1786393, 1846695, 1709572]
+            ]
+        };
+        
+        // ** NOTA: Los datos de "Precios" no estaban en los archivos cargados, 
+        // por lo que se omiten en este dashboard. **
+
+        const chartColors = {
+            primary: 'rgb(30, 132, 73)', // var(--color-primary)
+            secondary: 'rgb(46, 204, 113)', // var(--color-secondary)
+            accent: 'rgb(243, 156, 18)', // var(--color-accent)
+            light: 'rgb(147, 212, 169)'
+        };
+
+        let areaChartInstance, productionChartInstance, salesChartInstance;
+        
+        // ------------------------------------------------------------------------------------------------
+        // 2. FUNCIONES DE PROCESAMIENTO
+        // ------------------------------------------------------------------------------------------------
+
+        /**
+         * Obtiene los datos para los gráficos basados en el filtro de año.
+         * @returns {Object} Datos procesados para cada gráfico.
+         */
+        function getChartData() {
+            const selectedYear = document.getElementById('filter-year').value;
+            const yearIndex = selectedYear === 'Total' ? dataArea.headers.length - 1 : dataArea.headers.indexOf(selectedYear);
+            
+            // 1. Datos para Área (Circular) y Producción (Barras) por Zona
+            const zones = dataArea.rows.slice(0, -1).map(row => row[0]); // Excluye Total
+            
+            const areaData = dataArea.rows.slice(0, -1).map(row => {
+                // Si el año es 'Total', usa la última columna (Total)
+                if (selectedYear === 'Total') {
+                    return row[dataArea.headers.length - 1];
+                }
+                // Si es un año específico, usa ese índice
+                return row[yearIndex];
+            });
+
+            const productionData = dataProduction.rows.slice(0, -1).map(row => {
+                if (selectedYear === 'Total') {
+                    return row[dataProduction.headers.length - 1];
+                }
+                return row[yearIndex];
+            });
+
+            // 2. Datos para Ventas (Línea) por Mercado (Siempre muestra la serie de tiempo 2021-2024)
+            const salesLabels = dataSales.headers.slice(1);
+            const nationalSales = dataSales.rows.find(row => row[0] === 'Nacional').slice(1);
+            const exportSales = dataSales.rows.find(row => row[0] === 'Exportación').slice(1);
+            
+            return {
+                zones,
+                areaData,
+                productionData,
+                salesLabels,
+                nationalSales,
+                exportSales
+            };
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        // 3. FUNCIONES DE RENDERIZADO DE GRÁFICOS Y TABLAS
+        // ------------------------------------------------------------------------------------------------
+
+        /**
+         * Renderiza el gráfico de Área Sembrada (Circular/Dona).
+         */
+        function renderAreaChart(data) {
+            if (areaChartInstance) areaChartInstance.destroy();
+            const ctx = document.getElementById('area-chart').getContext('2d');
+            
+            areaChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.zones,
+                    datasets: [{
+                        label: dataArea.title,
+                        data: data.areaData,
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.secondary,
+                            chartColors.accent,
+                            chartColors.light
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 14 }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Distribución por Zona - ${document.getElementById('filter-year').value === 'Total' ? 'Total 2024' : document.getElementById('filter-year').value}`,
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Renderiza el gráfico de Producción CPO (Barras).
+         */
+        function renderProductionChart(data) {
+            if (productionChartInstance) productionChartInstance.destroy();
+            const ctx = document.getElementById('production-chart').getContext('2d');
+            
+            productionChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.zones,
+                    datasets: [{
+                        label: dataProduction.title,
+                        data: data.productionData,
+                        backgroundColor: chartColors.primary,
+                        borderColor: chartColors.primary,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Toneladas' } },
+                        x: { title: { display: true, text: 'Zona' } }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Producción por Zona - ${document.getElementById('filter-year').value === 'Total' ? 'Total 2024' : document.getElementById('filter-year').value}`,
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Renderiza el gráfico de Ventas CPO (Línea).
+         */
+        function renderSalesChart(data) {
+            if (salesChartInstance) salesChartInstance.destroy();
+            const ctx = document.getElementById('sales-line-chart').getContext('2d');
+            
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.salesLabels,
+                    datasets: [
+                        {
+                            label: 'Ventas Nacional',
+                            data: data.nationalSales,
+                            borderColor: chartColors.primary,
+                            backgroundColor: 'rgba(30, 132, 73, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Ventas Exportación',
+                            data: data.exportSales,
+                            borderColor: chartColors.accent,
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Toneladas' } },
+                        x: { title: { display: true, text: 'Año' } }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Tendencia de Ventas por Mercado (2021-2024)',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Renderiza la tabla de datos seleccionada.
+         */
+        function renderTable() {
+            const tableType = document.getElementById('filter-table').value;
+            let data;
+            switch (tableType) {
+                case 'area': data = dataArea; break;
+                case 'production': data = dataProduction; break;
+                case 'sales': data = dataSales; break;
+                default: return;
+            }
+
+            let html = `<table class="data-table"><thead><tr>`;
+            data.headers.forEach(h => {
+                html += `<th>${h}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            data.rows.forEach(row => {
+                html += `<tr>`;
+                row.forEach((cell, index) => {
+                    const formattedCell = index > 0 ? new Intl.NumberFormat('es-CO').format(cell) : cell;
+                    html += `<td>${formattedCell}</td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('data-table-container').innerHTML = html;
+        }
+
+        /**
+         * Actualiza todos los gráficos y tablas cuando cambia el filtro de año.
+         */
+        function updateDashboard() {
+            const processedData = getChartData();
+            renderAreaChart(processedData);
+            renderProductionChart(processedData);
+            // La gráfica de línea de ventas no cambia con el filtro de año (es una serie de tiempo fija)
+            // renderSalesChart(processedData); 
+            renderTable(); // La tabla se actualiza según su propio filtro, pero la volvemos a renderizar para consistencia.
+        }
+        
+        // ------------------------------------------------------------------------------------------------
+        // 4. FUNCIONES DE DESCARGA
+        // ------------------------------------------------------------------------------------------------
+        
+        /**
+         * Descarga los datos seleccionados como archivo CSV.
+         * @param {string} dataType - El tipo de dato a descargar ('area', 'production', 'sales' o 'all').
+         */
+        function downloadCSV(dataType) {
+            let datasets = [];
+
+            if (dataType === 'all') {
+                datasets.push(dataArea, dataProduction, dataSales);
+            } else {
+                switch (dataType) {
+                    case 'area': datasets.push(dataArea); break;
+                    case 'production': datasets.push(dataProduction); break;
+                    case 'sales': datasets.push(dataSales); break;
+                    default: return;
+                }
+            }
+
+            let csvContent = "";
+            datasets.forEach(data => {
+                csvContent += `${data.title}\n`;
+                csvContent += data.headers.join(',') + "\n";
+                data.rows.forEach(row => {
+                    csvContent += row.join(',') + "\n";
+                });
+                csvContent += "\n"; // Separador entre datasets
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) { 
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Datos_Palma_Aceite_${dataType}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+
+        // ------------------------------------------------------------------------------------------------
+        // 5. INICIALIZACIÓN
+        // ------------------------------------------------------------------------------------------------
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const processedData = getChartData();
+            renderAreaChart(processedData);
+            renderProductionChart(processedData);
+            renderSalesChart(processedData);
+            renderTable();
+        });
+
+    </script>
+</body>
+</html>
