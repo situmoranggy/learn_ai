@@ -1,551 +1,567 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Agrícola - Palma de Aceite</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Dasbor Operasional Pabrik Kelapa Sawit</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
     <style>
-        /* Variables CSS para consistencia de color */
+        /* Variabel Warna Inspirasi Kelapa Sawit */
         :root {
-            --color-primary: #1e8449; /* Verde Oscuro de Palma */
-            --color-secondary: #2ecc71; /* Verde Brillante de Palma */
-            --color-accent: #f39c12; /* Naranja/Amarillo de Fruto */
-            --color-background: #f4f6f6; /* Fondo Claro */
-            --color-card-bg: #ffffff;
-            --color-text: #333333;
+            --color-palm-green: #38761D; /* Hijau Utama */
+            --color-light-green: #6AA84F; /* Hijau Aksen */
+            --color-dark-green: #1C4504; /* Hijau Gelap */
+            --color-background: #F8F9FA;
+            --color-card-bg: #FFFFFF;
+            --color-text-dark: #333;
+            --color-border: #E0E0E0;
         }
 
+        /* Gaya Dasar */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--color-background);
-            color: var(--color-text);
+            color: var(--color-text-dark);
+            line-height: 1.6;
         }
 
-        .header {
-            background-color: var(--color-primary);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header dan Kontrol */
+        header {
+            background-color: var(--color-palm-green);
             color: white;
-            padding: 20px 30px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            align-items: center;
         }
 
-        .header h1 {
+        header h1 {
             margin: 0;
             font-size: 1.8em;
             display: flex;
             align-items: center;
         }
-
-        .header i {
-            margin-right: 15px;
-            font-size: 1.5em;
-            color: var(--color-secondary);
+        
+        header i {
+            margin-right: 10px;
         }
 
-        .dashboard-container {
-            padding: 30px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .card {
-            background-color: var(--color-card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-            grid-column: span 1; /* Por defecto ocupa 1 columna */
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card-header {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: var(--color-primary);
-            border-bottom: 2px solid var(--color-secondary);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-header i {
-            color: var(--color-accent);
-        }
-
-        /* Tamaños de Gráficos */
-        .chart-large { grid-column: span 2; }
-        .chart-medium { grid-column: span 1; }
-        .table-full { grid-column: span 3; }
-
-        /* Estilos de Tabla */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .data-table th, .data-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .data-table th {
-            background-color: var(--color-primary);
+        .controls button, .controls label {
+            background-color: var(--color-light-green);
             color: white;
-            font-weight: 500;
-        }
-
-        .data-table tr:hover {
-            background-color: #e8f8f5; /* Verde muy claro al pasar el mouse */
-        }
-
-        /* Controles de Filtrado y Descarga */
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .controls label {
-            font-weight: 500;
-        }
-
-        .controls select, .controls button {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        .controls button {
-            background-color: var(--color-secondary);
-            color: white;
+            border: none;
+            padding: 10px 15px;
             cursor: pointer;
+            border-radius: 5px;
+            margin-left: 10px;
             transition: background-color 0.3s;
         }
 
-        .controls button:hover {
-            background-color: #27ae60;
+        .controls button:hover, .controls label:hover {
+            background-color: var(--color-dark-green);
+        }
+        
+        #file-upload-input {
+            display: none;
         }
 
-        /* Responsividad básica */
-        @media (max-width: 1200px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-            }
-            .card {
-                grid-column: span 1 !important;
-            }
+        /* Kartu KPI */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .kpi-card {
+            background-color: var(--color-card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-card i {
+            font-size: 2em;
+            color: var(--color-palm-green);
+        }
+
+        .kpi-value {
+            text-align: right;
+        }
+
+        .kpi-value h3 {
+            margin: 0;
+            font-size: 1.5em;
+            color: var(--color-dark-green);
+        }
+
+        .kpi-value p {
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Area Grafik */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr; /* Bar dan Line lebih besar dari Pie */
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .chart-card {
+            background-color: var(--color-card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Tabel Data */
+        .data-table-section {
+            margin-top: 30px;
+        }
+
+        .data-table-section h2 {
+            border-bottom: 2px solid var(--color-palm-green);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .table-controls input, .table-controls select {
+            padding: 8px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+        }
+        
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+        }
+
+        #data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        #data-table th, #data-table td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        #data-table th {
+            background-color: var(--color-light-green);
+            color: white;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #data-table tr:hover {
+            background-color: #f1f1f1;
         }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <h1><i class="fas fa-seedling"></i> Dashboard Agrícola - Palma de Aceite </h1>
-        <p>Análisis 2021-2024</p>
-    </div>
-
-    <div class="dashboard-container">
-
-        <div class="card chart-medium">
-            <div class="card-header">
-                Filtros Globales <i class="fas fa-filter"></i>
-            </div>
-            <div class="controls">
-                <label for="filter-year">Año:</label>
-                <select id="filter-year" onchange="updateDashboard()">
-                    <option value="Total">Todos</option>
-                    <option value="2021">2021</option>
-                    <option value="2022">2022</option>
-                    <option value="2023">2023</option>
-                    <option value="2024">2024</option>
-                </select>
-            </div>
-            <div class="controls">
-                <button onclick="downloadCSV('all')"><i class="fas fa-download"></i> Descargar Todos los Datos</button>
-            </div>
+    <header>
+        <h1><i class="fas fa-seedling"></i> Dasbor Operasional Pabrik Kelapa Sawit</h1>
+        <div class="controls">
+            <label for="file-upload-input" title="Unggah file CSV">
+                <i class="fas fa-upload"></i> Unggah Data CSV
+            </label>
+            <input type="file" id="file-upload-input" accept=".csv">
+            <button id="download-data-btn" disabled title="Unduh data yang saat ini difilter">
+                <i class="fas fa-download"></i> Unduh Data
+            </button>
         </div>
+    </header>
 
-        <div class="card chart-large">
-            <div class="card-header">
-                Área Neta Sembrada por Zona (Ha) <i class="fas fa-tree"></i>
-            </div>
-            <canvas id="area-chart"></canvas>
-        </div>
-
-        <div class="card chart-large">
-            <div class="card-header">
-                Producción de CPO por Zona (Toneladas) <i class="fas fa-oil-can"></i>
-            </div>
-            <canvas id="production-chart"></canvas>
-        </div>
-
-        <div class="card chart-medium">
-            <div class="card-header">
-                Tendencia de Ventas CPO (Toneladas) <i class="fas fa-chart-line"></i>
-            </div>
-            <canvas id="sales-line-chart"></canvas>
-        </div>
-
-        <div class="card table-full">
-            <div class="card-header">
-                Datos Detallados 2021-2024 <i class="fas fa-table"></i>
-            </div>
-            <div class="controls">
-                <label for="filter-table">Datos a Mostrar:</label>
-                <select id="filter-table" onchange="renderTable()">
-                    <option value="area">Área Neta Sembrada</option>
-                    <option value="production">Producción CPO</option>
-                    <option value="sales">Ventas CPO</option>
-                </select>
-                <button onclick="downloadCSV(document.getElementById('filter-table').value)"><i class="fas fa-file-csv"></i> Descargar Tabla</button>
-            </div>
-            <div id="data-table-container">
+    <main class="container">
+        
+        <h2><i class="fas fa-tachometer-alt"></i> Ringkasan Kinerja Utama</h2>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <i class="fas fa-box"></i>
+                <div class="kpi-value">
+                    <h3 id="kpi-produksi">0</h3>
+                    <p>Total Produksi (Ton)</p>
                 </div>
+            </div>
+            <div class="kpi-card">
+                <i class="fas fa-money-bill-wave"></i>
+                <div class="kpi-value">
+                    <h3 id="kpi-harga">IDR 0</h3>
+                    <p>Rata-rata Harga Jual</p>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <i class="fas fa-map-marked-alt"></i>
+                <div class="kpi-value">
+                    <h3 id="kpi-area">0</h3>
+                    <p>Total Area (Ha)</p>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <i class="fas fa-chart-line"></i>
+                <div class="kpi-value">
+                    <h3 id="kpi-margin">0%</h3>
+                    <p>Margin Efisiensi</p>
+                </div>
+            </div>
         </div>
 
-    </div>
+        <hr style="margin: 30px 0; border-color: var(--color-border);">
+
+        <h2><i class="fas fa-chart-bar"></i> Visualisasi Data Interaktif</h2>
+        <div class="chart-grid">
+            <div class="chart-card" style="grid-column: span 1;">
+                <h3>Produksi Tahunan (Ton)</h3>
+                <canvas id="bar-chart"></canvas>
+            </div>
+            
+            <div class="chart-card" style="grid-column: span 1;">
+                <h3>Tren Harga Jual (IDR)</h3>
+                <canvas id="line-chart"></canvas>
+            </div>
+            
+             <div class="chart-card" style="grid-column: span 2; max-width: 400px; margin: 0 auto;">
+                <h3>Proporsi Area Berdasarkan Jenis</h3>
+                <canvas id="pie-chart"></canvas>
+            </div>
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: var(--color-border);">
+
+        <div class="data-table-section">
+            <h2><i class="fas fa-table"></i> Data Mentah Detail</h2>
+            
+            <div class="table-controls">
+                <input type="text" id="search-input" placeholder="Cari di tabel..." onkeyup="filterTable()">
+                <select id="filter-select" onchange="filterTable()">
+                    <option value="">Semua Lokasi</option>
+                    </select>
+            </div>
+            
+            <div class="data-table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <tr><td colspan="5" style="text-align: center;">Unggah file CSV untuk menampilkan data.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 
     <script>
-        // ------------------------------------------------------------------------------------------------
-        // 1. DATOS (Extraídos de los archivos CSV)
-        // ------------------------------------------------------------------------------------------------
-        const dataArea = {
-            title: "Área Neta Sembrada (Ha)",
-            headers: ["Zona", "2021", "2022", "2023", "2024"],
-            rows: [
-                ["Central", 190208, 191905, 202546, 206656],
-                ["Norte", 104340, 99637, 100359, 106772],
-                ["Oriental", 265912, 265283, 271890, 273376],
-                ["Suroccidental", 19416, 19975, 21422, 22338],
-                ["Total", 579876, 576800, 596217, 609142]
-            ]
-        };
-
-        const dataProduction = {
-            title: "Producción CPO (Toneladas)",
-            headers: ["Zona", "2021", "2022", "2023", "2024"],
-            rows: [
-                ["Central", 553336, 602762, 578137, 525671],
-                ["Norte", 352462, 372560, 331333, 272863],
-                ["Oriental", 776535, 722660, 847401, 835503],
-                ["Suroccidental", 65556, 70400, 84604, 85772],
-                ["Total", 1747888, 1768381, 1841475, 1719809]
-            ]
-        };
-
-        const dataSales = {
-            title: "Ventas CPO (Toneladas)",
-            headers: ["Mercado", "2021", "2022", "2023", "2024"],
-            rows: [
-                ["Nacional", 1210986, 1319253, 1356333, 1328012],
-                ["Exportación", 492733, 467140, 490362, 381560],
-                ["Total", 1703719, 1786393, 1846695, 1709572]
-            ]
-        };
+        // --- VARIABEL GLOBAL ---
+        let allData = []; // Data mentah dari CSV
+        let filteredData = []; // Data yang saat ini ditampilkan/difilter
+        let currentSortColumn = null;
+        let currentSortDirection = 1; // 1 = ascending, -1 = descending
         
-        // ** NOTA: Los datos de "Precios" no estaban en los archivos cargados, 
-        // por lo que se omiten en este dashboard. **
-
-        const chartColors = {
-            primary: 'rgb(30, 132, 73)', // var(--color-primary)
-            secondary: 'rgb(46, 204, 113)', // var(--color-secondary)
-            accent: 'rgb(243, 156, 18)', // var(--color-accent)
-            light: 'rgb(147, 212, 169)'
-        };
-
-        let areaChartInstance, productionChartInstance, salesChartInstance;
+        let barChartInstance, lineChartInstance, pieChartInstance;
         
-        // ------------------------------------------------------------------------------------------------
-        // 2. FUNCIONES DE PROCESAMIENTO
-        // ------------------------------------------------------------------------------------------------
+        // Warna untuk Chart.js (Nuansa Hijau)
+        const PALM_COLORS = [
+            'rgba(56, 118, 29, 0.8)', // palm-green
+            'rgba(106, 168, 79, 0.8)', // light-green
+            'rgba(28, 69, 4, 0.8)', // dark-green
+            'rgba(142, 180, 21, 0.8)',
+            'rgba(179, 217, 127, 0.8)'
+        ];
+        
+        // --- FUNGSI UTAMA ---
 
-        /**
-         * Obtiene los datos para los gráficos basados en el filtro de año.
-         * @returns {Object} Datos procesados para cada gráfico.
-         */
-        function getChartData() {
-            const selectedYear = document.getElementById('filter-year').value;
-            const yearIndex = selectedYear === 'Total' ? dataArea.headers.length - 1 : dataArea.headers.indexOf(selectedYear);
-            
-            // 1. Datos para Área (Circular) y Producción (Barras) por Zona
-            const zones = dataArea.rows.slice(0, -1).map(row => row[0]); // Excluye Total
-            
-            const areaData = dataArea.rows.slice(0, -1).map(row => {
-                // Si el año es 'Total', usa la última columna (Total)
-                if (selectedYear === 'Total') {
-                    return row[dataArea.headers.length - 1];
-                }
-                // Si es un año específico, usa ese índice
-                return row[yearIndex];
-            });
-
-            const productionData = dataProduction.rows.slice(0, -1).map(row => {
-                if (selectedYear === 'Total') {
-                    return row[dataProduction.headers.length - 1];
-                }
-                return row[yearIndex];
-            });
-
-            // 2. Datos para Ventas (Línea) por Mercado (Siempre muestra la serie de tiempo 2021-2024)
-            const salesLabels = dataSales.headers.slice(1);
-            const nationalSales = dataSales.rows.find(row => row[0] === 'Nacional').slice(1);
-            const exportSales = dataSales.rows.find(row => row[0] === 'Exportación').slice(1);
-            
-            return {
-                zones,
-                areaData,
-                productionData,
-                salesLabels,
-                nationalSales,
-                exportSales
-            };
-        }
-
-        // ------------------------------------------------------------------------------------------------
-        // 3. FUNCIONES DE RENDERIZADO DE GRÁFICOS Y TABLAS
-        // ------------------------------------------------------------------------------------------------
-
-        /**
-         * Renderiza el gráfico de Área Sembrada (Circular/Dona).
-         */
-        function renderAreaChart(data) {
-            if (areaChartInstance) areaChartInstance.destroy();
-            const ctx = document.getElementById('area-chart').getContext('2d');
-            
-            areaChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.zones,
-                    datasets: [{
-                        label: dataArea.title,
-                        data: data.areaData,
-                        backgroundColor: [
-                            chartColors.primary,
-                            chartColors.secondary,
-                            chartColors.accent,
-                            chartColors.light
-                        ],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: { size: 14 }
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: `Distribución por Zona - ${document.getElementById('filter-year').value === 'Total' ? 'Total 2024' : document.getElementById('filter-year').value}`,
-                            font: { size: 16, weight: 'bold' }
-                        }
+        // 1. Pemuat File dan Papa Parse
+        document.getElementById('file-upload-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // Asumsi Kolom: Tanggal, Lokasi, Produksi_Ton, Area_Ha, Harga_IDR_Kg, Jenis_Sawit
+                        allData = results.data;
+                        filteredData = [...allData]; // Salin data awal
+                        
+                        updateDashboard(filteredData);
+                        document.getElementById('download-data-btn').disabled = false;
                     }
-                }
-            });
+                });
+            }
+        });
+
+        // 2. Perbarui Semua Komponen Dasbor
+        function updateDashboard(data) {
+            if (data.length === 0) return;
+            
+            // Perbarui KPI
+            updateKPI(data);
+            
+            // Perbarui Tabel & Filter
+            renderTable(data);
+            populateFilters(allData); // Gunakan allData untuk mengisi opsi filter
+            
+            // Perbarui Grafik
+            renderCharts(data);
+            
+            // Reset sort
+            currentSortColumn = null;
+            currentSortDirection = 1;
         }
 
-        /**
-         * Renderiza el gráfico de Producción CPO (Barras).
-         */
-        function renderProductionChart(data) {
-            if (productionChartInstance) productionChartInstance.destroy();
-            const ctx = document.getElementById('production-chart').getContext('2d');
+        // 3. Perbarui KPI
+        function updateKPI(data) {
+            if (data.length === 0) {
+                document.getElementById('kpi-produksi').innerText = '0';
+                document.getElementById('kpi-harga').innerText = 'IDR 0';
+                document.getElementById('kpi-area').innerText = '0';
+                document.getElementById('kpi-margin').innerText = '0%';
+                return;
+            }
+
+            const totalProduksi = data.reduce((sum, row) => sum + (parseFloat(row.Produksi_Ton) || 0), 0);
+            const totalArea = data.reduce((sum, row) => sum + (parseFloat(row.Area_Ha) || 0), 0);
+            const totalHarga = data.reduce((sum, row) => sum + (parseFloat(row.Harga_IDR_Kg) || 0), 0);
+            const avgHarga = totalHarga / data.length;
             
-            productionChartInstance = new Chart(ctx, {
+            // Contoh perhitungan fiktif
+            const margin = (totalProduksi > 0) ? (totalArea / totalProduksi * 10).toFixed(2) : 0; 
+
+            document.getElementById('kpi-produksi').innerText = (totalProduksi / 1000).toFixed(2) + 'K';
+            document.getElementById('kpi-harga').innerText = 'IDR ' + new Intl.NumberFormat('id-ID').format(Math.round(avgHarga));
+            document.getElementById('kpi-area').innerText = totalArea.toFixed(2);
+            document.getElementById('kpi-margin').innerText = margin + '%';
+        }
+        
+        // 4. Inisialisasi/Perbarui Grafik
+        function renderCharts(data) {
+            // Data Grafik Batang (Produksi Tahunan - Contoh Sederhana)
+            const prodData = data.reduce((acc, row) => {
+                const year = row.Tanggal ? new Date(row.Tanggal).getFullYear() : 'Tidak Diketahui';
+                acc[year] = (acc[year] || 0) + (parseFloat(row.Produksi_Ton) || 0);
+                return acc;
+            }, {});
+            const barLabels = Object.keys(prodData).sort();
+            const barValues = barLabels.map(label => prodData[label]);
+
+            // Data Grafik Garis (Tren Harga)
+            const lineData = data.slice().sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal));
+            const lineLabels = lineData.map(row => row.Tanggal);
+            const lineValues = lineData.map(row => parseFloat(row.Harga_IDR_Kg) || 0);
+            
+            // Data Diagram Lingkaran (Proporsi Jenis Sawit)
+            const pieData = data.reduce((acc, row) => {
+                const jenis = row.Jenis_Sawit || 'Lainnya';
+                acc[jenis] = (acc[jenis] || 0) + (parseFloat(row.Area_Ha) || 0);
+                return acc;
+            }, {});
+            const pieLabels = Object.keys(pieData);
+            const pieValues = pieLabels.map(label => pieData[label]);
+
+            // Inisialisasi atau Hancurkan & Buat Ulang Grafik
+            if (barChartInstance) barChartInstance.destroy();
+            barChartInstance = new Chart(document.getElementById('bar-chart'), {
                 type: 'bar',
                 data: {
-                    labels: data.zones,
+                    labels: barLabels,
                     datasets: [{
-                        label: dataProduction.title,
-                        data: data.productionData,
-                        backgroundColor: chartColors.primary,
-                        borderColor: chartColors.primary,
+                        label: 'Total Produksi (Ton)',
+                        data: barValues,
+                        backgroundColor: PALM_COLORS[0],
+                        borderColor: PALM_COLORS[2],
                         borderWidth: 1
                     }]
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { beginAtZero: true, title: { display: true, text: 'Toneladas' } },
-                        x: { title: { display: true, text: 'Zona' } }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Producción por Zona - ${document.getElementById('filter-year').value === 'Total' ? 'Total 2024' : document.getElementById('filter-year').value}`,
-                            font: { size: 16, weight: 'bold' }
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
             });
-        }
-
-        /**
-         * Renderiza el gráfico de Ventas CPO (Línea).
-         */
-        function renderSalesChart(data) {
-            if (salesChartInstance) salesChartInstance.destroy();
-            const ctx = document.getElementById('sales-line-chart').getContext('2d');
             
-            salesChartInstance = new Chart(ctx, {
+            if (lineChartInstance) lineChartInstance.destroy();
+            lineChartInstance = new Chart(document.getElementById('line-chart'), {
                 type: 'line',
                 data: {
-                    labels: data.salesLabels,
-                    datasets: [
-                        {
-                            label: 'Ventas Nacional',
-                            data: data.nationalSales,
-                            borderColor: chartColors.primary,
-                            backgroundColor: 'rgba(30, 132, 73, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Ventas Exportación',
-                            data: data.exportSales,
-                            borderColor: chartColors.accent,
-                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
+                    labels: lineLabels,
+                    datasets: [{
+                        label: 'Harga (IDR/Kg)',
+                        data: lineValues,
+                        borderColor: PALM_COLORS[1],
+                        tension: 0.1
+                    }]
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { beginAtZero: true, title: { display: true, text: 'Toneladas' } },
-                        x: { title: { display: true, text: 'Año' } }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Tendencia de Ventas por Mercado (2021-2024)',
-                            font: { size: 16, weight: 'bold' }
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+            });
+            
+            if (pieChartInstance) pieChartInstance.destroy();
+            pieChartInstance = new Chart(document.getElementById('pie-chart'), {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieValues,
+                        backgroundColor: PALM_COLORS
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: true }
             });
         }
-
-        /**
-         * Renderiza la tabla de datos seleccionada.
-         */
-        function renderTable() {
-            const tableType = document.getElementById('filter-table').value;
-            let data;
-            switch (tableType) {
-                case 'area': data = dataArea; break;
-                case 'production': data = dataProduction; break;
-                case 'sales': data = dataSales; break;
-                default: return;
+        
+        // 5. Render Tabel
+        function renderTable(data) {
+            const tableBody = document.getElementById('data-table-body');
+            const tableHeadRow = document.querySelector('#data-table thead tr');
+            tableBody.innerHTML = '';
+            tableHeadRow.innerHTML = '';
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada data yang tersedia atau sesuai dengan filter.</td></tr>';
+                return;
             }
-
-            let html = `<table class="data-table"><thead><tr>`;
-            data.headers.forEach(h => {
-                html += `<th>${h}</th>`;
+            
+            // Buat Header Tabel
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.innerText = header.replace(/_/g, ' ');
+                th.setAttribute('onclick', `sortTable('${header}')`);
+                tableHeadRow.appendChild(th);
             });
-            html += `</tr></thead><tbody>`;
-
-            data.rows.forEach(row => {
-                html += `<tr>`;
-                row.forEach((cell, index) => {
-                    const formattedCell = index > 0 ? new Intl.NumberFormat('es-CO').format(cell) : cell;
-                    html += `<td>${formattedCell}</td>`;
+            
+            // Isi Body Tabel
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.innerText = row[header];
+                    tr.appendChild(td);
                 });
-                html += `</tr>`;
+                tableBody.appendChild(tr);
             });
-
-            html += `</tbody></table>`;
-            document.getElementById('data-table-container').innerHTML = html;
         }
 
-        /**
-         * Actualiza todos los gráficos y tablas cuando cambia el filtro de año.
-         */
-        function updateDashboard() {
-            const processedData = getChartData();
-            renderAreaChart(processedData);
-            renderProductionChart(processedData);
-            // La gráfica de línea de ventas no cambia con el filtro de año (es una serie de tiempo fija)
-            // renderSalesChart(processedData); 
-            renderTable(); // La tabla se actualiza según su propio filtro, pero la volvemos a renderizar para consistencia.
+        // 6. Isi Opsi Filter
+        function populateFilters(data) {
+            const select = document.getElementById('filter-select');
+            select.innerHTML = '<option value="">Semua Lokasi</option>';
+            
+            const locations = new Set(data.map(row => row.Lokasi).filter(Boolean));
+            
+            locations.forEach(loc => {
+                const option = document.createElement('option');
+                option.value = loc;
+                option.innerText = loc;
+                select.appendChild(option);
+            });
         }
         
-        // ------------------------------------------------------------------------------------------------
-        // 4. FUNCIONES DE DESCARGA
-        // ------------------------------------------------------------------------------------------------
-        
-        /**
-         * Descarga los datos seleccionados como archivo CSV.
-         * @param {string} dataType - El tipo de dato a descargar ('area', 'production', 'sales' o 'all').
-         */
-        function downloadCSV(dataType) {
-            let datasets = [];
+        // 7. Filter Tabel dan Data (Dipicu oleh input/select)
+        function filterTable() {
+            const searchInput = document.getElementById('search-input').value.toLowerCase();
+            const filterSelect = document.getElementById('filter-select').value;
+            
+            filteredData = allData.filter(row => {
+                // Filter Pencarian Global
+                const matchesSearch = Object.values(row).some(val => 
+                    String(val).toLowerCase().includes(searchInput)
+                );
+                
+                // Filter Lokasi
+                const matchesLocation = !filterSelect || row.Lokasi === filterSelect;
+                
+                return matchesSearch && matchesLocation;
+            });
+            
+            updateDashboard(filteredData); // Perbarui KPI, Grafik, dan Tabel dengan data yang difilter
+        }
 
-            if (dataType === 'all') {
-                datasets.push(dataArea, dataProduction, dataSales);
+        // 8. Sorting Tabel
+        function sortTable(columnName) {
+            if (currentSortColumn !== columnName) {
+                currentSortColumn = columnName;
+                currentSortDirection = 1;
             } else {
-                switch (dataType) {
-                    case 'area': datasets.push(dataArea); break;
-                    case 'production': datasets.push(dataProduction); break;
-                    case 'sales': datasets.push(dataSales); break;
-                    default: return;
-                }
+                currentSortDirection *= -1; // Balikkan arah sort
             }
 
-            let csvContent = "";
-            datasets.forEach(data => {
-                csvContent += `${data.title}\n`;
-                csvContent += data.headers.join(',') + "\n";
-                data.rows.forEach(row => {
-                    csvContent += row.join(',') + "\n";
-                });
-                csvContent += "\n"; // Separador entre datasets
+            filteredData.sort((a, b) => {
+                const valA = isNaN(parseFloat(a[columnName])) ? String(a[columnName]) : parseFloat(a[columnName]);
+                const valB = isNaN(parseFloat(b[columnName])) ? String(b[columnName]) : parseFloat(b[columnName]);
+
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return (valA - valB) * currentSortDirection;
+                } else {
+                    return String(valA).localeCompare(String(valB)) * currentSortDirection;
+                }
             });
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            if (link.download !== undefined) { 
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `Datos_Palma_Aceite_${dataType}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            renderTable(filteredData);
         }
 
+        // 9. Unduh Data (CSV)
+        document.getElementById('download-data-btn').addEventListener('click', function() {
+            if (filteredData.length === 0) return;
 
-        // ------------------------------------------------------------------------------------------------
-        // 5. INICIALIZACIÓN
-        // ------------------------------------------------------------------------------------------------
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const processedData = getChartData();
-            renderAreaChart(processedData);
-            renderProductionChart(processedData);
-            renderSalesChart(processedData);
-            renderTable();
+            const csv = Papa.unparse(filteredData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', 'data_kelapa_sawit_export.csv');
+            link.click();
         });
+        
+        // --- DATA CONTOH (Simulasi Data Unggahan) ---
+        const sampleCSV = `Tanggal,Lokasi,Produksi_Ton,Area_Ha,Harga_IDR_Kg,Jenis_Sawit
+        2025-01-01,Pabrik A,150,10,12500,Tenera
+        2025-01-05,Pabrik B,210,15,13000,Dura
+        2025-01-10,Pabrik A,180,12,12800,Tenera
+        2025-02-01,Pabrik C,300,20,13500,Dura
+        2025-02-05,Pabrik B,250,18,13200,Tenera
+        2025-03-01,Pabrik A,190,11,12600,Tenera
+        2025-03-05,Pabrik C,280,22,13800,Dura
+        2025-04-01,Pabrik B,230,16,13100,Tenera`;
 
+        // Pemuatan data contoh saat startup
+        Papa.parse(sampleCSV, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                allData = results.data;
+                filteredData = [...allData];
+                updateDashboard(filteredData);
+                document.getElementById('download-data-btn').disabled = false;
+            }
+        });
+        
     </script>
 </body>
 </html>
